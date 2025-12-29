@@ -14,7 +14,38 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ expert }) => {
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Load history from localStorage when expert changes
   useEffect(() => {
+    const storageKey = `soul_oracle_chat_${expert.id}`;
+    const savedHistory = localStorage.getItem(storageKey);
+    
+    if (savedHistory) {
+      try {
+        setMessages(JSON.parse(savedHistory));
+      } catch (e) {
+        console.error("Failed to parse history", e);
+        resetToGreeting();
+      }
+    } else {
+      resetToGreeting();
+    }
+  }, [expert]);
+
+  // Save history to localStorage whenever messages change
+  useEffect(() => {
+    if (messages.length > 0) {
+      const storageKey = `soul_oracle_chat_${expert.id}`;
+      localStorage.setItem(storageKey, JSON.stringify(messages));
+    }
+  }, [messages, expert.id]);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, isTyping]);
+
+  const resetToGreeting = () => {
     setMessages([{
       id: 'greeting',
       role: 'model',
@@ -22,13 +53,15 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ expert }) => {
       expertId: expert.id,
       timestamp: Date.now()
     }]);
-  }, [expert]);
+  };
 
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  const clearHistory = () => {
+    if (window.confirm(`確定要清除與 ${expert.name} 的對話記憶嗎？`)) {
+      const storageKey = `soul_oracle_chat_${expert.id}`;
+      localStorage.removeItem(storageKey);
+      resetToGreeting();
     }
-  }, [messages, isTyping]);
+  };
 
   const handleSend = async () => {
     if (!inputText.trim()) return;
@@ -41,11 +74,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ expert }) => {
       timestamp: Date.now()
     };
 
-    setMessages(prev => [...prev, userMsg]);
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
     setInputText('');
     setIsTyping(true);
 
-    const history = messages.map(m => ({
+    // Prepare history for Gemini (limit to last 20 messages to keep context clean)
+    const history = newMessages.slice(-20).map(m => ({
       role: m.role,
       parts: [{ text: m.text }]
     }));
@@ -61,10 +96,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ expert }) => {
           { id: Date.now().toString() + '3', role: 'model', text: parsed.numerology, expertId: 'NUMEROLOGY', timestamp: Date.now() },
         ];
         
-        // Add replies one by one for effect
+        let currentMsgs = [...newMessages];
         for(let i = 0; i < councilReplies.length; i++) {
             await new Promise(r => setTimeout(r, 600));
-            setMessages(prev => [...prev, councilReplies[i]]);
+            currentMsgs = [...currentMsgs, councilReplies[i]];
+            setMessages(currentMsgs);
         }
       } catch (e) {
         console.error("Failed to parse council response", e);
@@ -98,9 +134,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ expert }) => {
             <p className="text-xs text-white/80">{expert.title}</p>
           </div>
         </div>
-        <div className="flex space-x-2">
-            <i className="fas fa-balance-scale text-white/50"></i>
-        </div>
+        <button 
+          onClick={clearHistory}
+          className="w-8 h-8 rounded-full bg-black/20 flex items-center justify-center text-white/70 hover:bg-black/40 hover:text-white transition-all"
+          title="清除記憶"
+        >
+          <i className="fas fa-trash-alt text-xs"></i>
+        </button>
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-6 bg-black/40 scroll-smooth">
@@ -137,7 +177,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ expert }) => {
           <div className="flex justify-start space-x-2 animate-pulse">
             <div className="w-8 h-8 bg-white/10 rounded-full"></div>
             <div className="bg-white/5 p-3 rounded-2xl rounded-tl-none text-gray-400 text-xs">
-              議會正在研議天機中...
+              正在研議中...
             </div>
           </div>
         )}
