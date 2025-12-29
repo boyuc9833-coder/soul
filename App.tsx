@@ -32,15 +32,27 @@ const App: React.FC = () => {
     setJournals(prev => [entry, ...prev]);
   };
 
+  const clearAllData = () => {
+    if (window.confirm("這將會永久刪除此裝置上的所有日記與對話紀錄，且無法復原。確定要執行嗎？")) {
+      localStorage.clear();
+      window.location.reload();
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 md:py-12">
       <header className="text-center mb-12">
+        <div className="flex items-center justify-center space-x-2 mb-2">
+          <span className="bg-emerald-500/20 text-emerald-400 text-[10px] px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center">
+            <i className="fas fa-shield-alt mr-1"></i> 裝置端私密儲存
+          </span>
+        </div>
         <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-rose-500 via-indigo-400 to-amber-500 gold-glow mb-4">
           SoulOracle <span className="text-2xl font-light">靈魂啟示錄</span>
         </h1>
         <p className="text-gray-400 max-w-lg mx-auto text-sm md:text-base">
           在這裡，每一滴情緒都有共鳴，每一顆星辰都有寓意。
-          向專家尋求智慧，或開啟<b>「命運議會」</b>獲取全方位啟示。
+          向專家尋求智慧，您的隱私受到本地加密保護。
         </p>
       </header>
 
@@ -65,6 +77,13 @@ const App: React.FC = () => {
               />
             ))}
           </div>
+          
+          <button 
+            onClick={clearAllData}
+            className="w-full py-2 text-[10px] text-gray-600 hover:text-rose-400 transition-colors uppercase tracking-widest"
+          >
+            <i className="fas fa-eraser mr-1"></i> 刪除所有隱私紀錄
+          </button>
         </div>
 
         {/* Right Column: Main Content Area */}
@@ -104,9 +123,8 @@ const App: React.FC = () => {
       <footer className="mt-20 text-center text-gray-600 text-xs py-8 border-t border-white/5">
         <p>© 2024 SoulOracle - 連結心靈與星辰的橋樑</p>
         <p className="mt-2 flex items-center justify-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
-          由 Gemini AI 驅動的命運演算法
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+          <i className="fas fa-lock text-[10px]"></i>
+          所有數據僅保存在您的個人裝置上
         </p>
       </footer>
     </div>
